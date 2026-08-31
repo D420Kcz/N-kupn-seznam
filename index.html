@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Nákupní Seznam Live</title>
+  <title>Můj Nákup (v.00420)</title>
   
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3081/3081840.png">
@@ -146,46 +146,82 @@
     }
 
     // --- ROZŠÍŘENÁ DATABÁZE POLOŽEK PRO PREDIKTIVNÍ ZADÁVÁNÍ ---
-    const presetData = {
-      food: [
-        // ZELENINA
-        "Brambory", "Brambory rané", "Cibule žlutá", "Cibule červená", "Cibulka jarní", "Česnek", "Mrkev", "Rajčata", "Rajčata keříková", "Rajčata cherry", "Okurka hadovka", "Okurky nakládačky", "Paprika červená", "Paprika zelená", "Paprika žlutá", "Paprikový lusk", "Brokolice", "Květák", "Cuketa", "Lilek", "Pór", "Celer", "Petržel", "Křen", "Špenát čerstvý", "Špenát mražený", "Hrášek mražený", "Kukuřice plech", "Kukuřice čerstvá", "Fazole červené", "Fazole bílé", "Červená řepa", "Hlávkový salát", "Ledový salát", "Rukola", "Polníček", "Pekingské zelí", "Zelí bílé", "Zelí červené", "Kysané zelí", "Patizon", "Dýně hokaido", "Dýně máslová", "Ředkvičky", "Kapr/Rybí filé",
+   const categoryRules = {
+  "Ovoce a zelenina": [
+    // Ovoce
+    "jablko", "banán", "pomeranč", "mandarinka", "citrón", "limetka", "grep", "grapefruit", 
+    "hroznové víno", "jahoda", "malina", "borůvka", "ostružina", "broskev", "meruňka", 
+    "nektarinka", "švestka", "meloun", "ananas", "mango", "avokádo", "kiwi", "fík", 
+    "datle", "brusinka", "rybíz", "angrešt",
+    // Zelenina
+    "brambor", "mrkev", "cibule", "česnek", "rajče", "paprika", "okurka", "salát", 
+    "špenát", "brokolice", "květák", "cuketa", "dýně", "lilek", "celer", "petržel", 
+    "pór", "pórek", "ředkvička", "ředkev", "bylinka", "bazalka", "máta", "pažitka", 
+    "kopr", "petrželka", "kukuřice", "hrášek", "fazole", "červená řepa", "zelí", "houba", "žampión"
+  ],
 
-        // OVOCE
-        "Jablka", "Hrušky", "Banány", "Citrony", "Pomeranče", "Mandarinky", "Grep", "Limetky", "Jahody", "Maliny", "Borůvky", "Ostružiny", "Nektarinky", "Broskve", "Meruňky", "Švestky", "Víno hroznové bílé", "Víno hroznové červené", "Meloun vodní", "Meloun cukrový", "Ananas", "Mango", "Avokádo", "Kiwi", "Granátové jablko", "Fíky čerstvé", "Kaki", "Brusinky",
+  "Pečivo": [
+    "chléb", "houska", "rohlík", "bageta", "vánočka", "toastový chléb", "koláč", 
+    "croissant", "kobliha", "donut", "raženka", "kaiserka", "ciabatta", "focaccia", 
+    "veka", "bulka", "tortilla", "loupák", "štrúdl", "závin"
+  ],
 
-        // MĚKKÉ & TRVANLIVÉ PEČIVO
-        "Chléb šumava", "Chléb konzumní", "Chléb toastový světlý", "Chléb toastový tmavý", "Rohlíky", "Housky", "Kaiserka", "Bageta", "Ciabatta", "Bulka na burger", "Tortilla", "Vánočka", "Muffin", "Donut", "Koblížek", "Croissant", "Pletenka",
+  "Mléčné a chladicí": [
+    "mléko", "máslo", "sýr", "eidam", "gouda", "hermelín", "camembert", "niva", 
+    "balkánský sýr", "mozzarella", "parmezán", "tvaroh", "jogurt", "smetana", 
+    "šlehačka", "tavený sýr", "lučina", "žervé", "cottage", "pribináček", "termix", 
+    "podmáslí", "kefír", "syrovátka", "kvasnice", "droždí", "pudink", "listové těsto"
+  ],
 
-        // MLÉČNÉ VÝROBKY & VEJCE
-        "Mléko plnotučné", "Mléko polotučné", "Mléko trvanlivé", "Mléko bezlaktozové", "Máslo", "Vejce M", "Vejce L", "Smetana ke šlehání", "Smetana kysaná", "Tvaroh jemný", "Tvaroh tučný", "Tvaroh tvrdý", "Jogurt bílý", "Jogurt ovocný", "Ovocná kapsička", "Termix", "Eidam 30%", "Eidam 45%", "Gouda", "Ementál", "Cheddar", "Mozzarella", "Hermelín", "Niva", "Balkan cheese", "Parmezán", "Mascarpone", "Kefír", "Acidofilní mléko",
+  "Maso a uzeniny": [
+    "maso", "kuřecí", "kuřecí prsa", "vepřové", "hovězí", "krůtí", "kachna", "husa", "mleté maso", 
+    "šunka", "párek", "klobása", "slanina", "vysočina", "herkules", "poličan", 
+    "špekáček", "jitrnice", "jelito", "tlačenka", "paštika", "ryba", "losos", 
+    "treska", "kapr", "pstruh", "tuňák fresh", "kreveta"
+  ],
 
-        // MASO, UZENINY & RYBY
-        "Kuřecí prsa", "Kuřecí stehna", "Kuře celé", "Mleté maso mix", "Hovězí zadní", "Hovězí přední", "Vepřová krkovice", "Vepřová pečeně", "Vepřová panenka", "Vepřová plec", "Šunka kuřecí", "Šunka vepřová", "Šunka nejvyšší jakosti", "Gothaj", "Vysočina", "Párky vídeňské", "Párky debrecínské", "Klobása", "Slanina", "Uzené maso", "Játra", "Losos filet", "Trestka filet", "Tuna plechovky", "Sardinky",
+  "Trvanlivé potraviny": [
+    "mouka", "cukr", "sůl", "rýže", "těstoviny", "špagety", "kolínka", "vřetena", 
+    "penne", "kuskus", "bulgur", "čočka", "olej", "olivový olej", "ocet", "balsamico", 
+    "strouhanka", "krupice", "ovsené vločky", "müsli", "granola", "kečup", "tatarka", 
+    "majronéza", "hořčice", "rajčatový protlak", "pesto", "konzerva", "tuňák", 
+    "sardinka", "kompot", "džem", "marmeláda", "med", "nutella", "piškot", "koření", 
+    "pepř", "kmín", "mletá paprika", "majoránka", "oregano", "skořice", "vanilka", 
+    "kypřicí prášek", "prášek do pečiva", "vanilkový cukr", "kakao", "čokoláda na vaření", "bujón"
+  ],
 
-        // TRVANLIVÉ POTRAVINY & PEČENÍ
-        "Rýže basmati", "Rýže jasmínová", "Těstoviny špagety", "Těstoviny kolínka", "Těstoviny penne", "Těstoviny fusilli", "Ovesné vločky", "Cukr krupice", "Cukr moučka", "Cukr třtinový", "Mouka hladká", "Mouka polohrubá", "Mouka hrubá", "Strouhanka", "Krupice", "Kypřicí prášek", "Droždí čerstvé", "Droždí sušené", "Vanilkový cukr", "Pudink", "Solamyl / Škrob", "Kakao", "Čokoláda na vaření", "Sůl", "Pepř mletý", "Paprika sladká", "Kmín", "Majoránka", "Bobkový list", "Nové koření", "Olej slunečnicový", "Olej řepkový", "Olej olivový extra panenský", "Ocel / Ocet", "Balsamico", "Kečup jemný", "Kečup ostrý", "Majonéza", "Tatarská omáčka", "Hořčice plnotučná", "Hořčice krémžská",
+  "Pochutiny a sladkosti": [
+    "čokoláda", "bonbón", "oplatka", "keks", "chipsy", "brambůrky", "oříšky", 
+    "mandle", "kešu", "pistácie", "tyčinka", "žvýkačka", "popcorn"
+  ],
 
-        // NÁPOJE
-        "Voda neperlivá", "Voda jemně perlivá", "Voda perlivá", "Minerálka Magnesia", "Džus pomeranč 100%", "Džus jablko 100%", "Kola", "Kofola", "Tonic", "Káva zrnková", "Káva mletá", "Káva instantní", "Čaj černý", "Čaj zelený", "Čaj ovocný", "Čaj bylinkový", "Pivo světlé", "Pivo ležák", "Pivo nealko", "Víno bílé", "Víno červené", "Víno růžové", "Prosecco / Sekt"
-      ],
-      kitchen: [
-        // NÁDOBÍ & PEČENÍ
-        "Hrnec malý", "Hrnec velký", "Rendlík", "Pánev nepřilnavá", "Pánev na lívance", "Wok", "Plech na pečení", "Forma na bábovku", "Forma na dort", "Zapékací mísa", "Mísa nerez", "Mísa plastová", "Prkénko dřevěné", "Prkénko plastové",
+  "Nápoje": [
+    "voda", "minerálka", "pivo", "víno", "prosecco", "džus", "sirup", "šťáva", 
+    "káva", "zrnková káva", "mletá káva", "espresso", "čaj", "černý čaj", 
+    "zelený čaj", "ovocný čaj", "cola", "kofola", "fanta", "sprite", "tonic", 
+    "energetický nápoj"
+  ],
 
-        // NÁČINÍ & POMŮCKY
-        "Nůž kuchařský", "Nůž na pečivo", "Nůž malý", "Obracečka", "Vařečka", "Naběračka", "Škrabka na brambory", "Struhadlo", "Lis na česnek", "Otvírák na konzervy", "Otvírák na víno", "Krajáč / Kuchyňské nůžky", "Šlehačka ruční", "Minutka kuchyňská", "Váha kuchyňská", "Teploměr na maso", "Cedník", "Sítko na čaj",
+  "Drogerie a hygiena": [
+    "toaletní papír", "kapesník", "vlhčený ubrousek", "mýdlo", "sprchový gel", 
+    "šampón", "kondicionér", "zubní pasta", "zubní kartáček", "deodorant", 
+    "voňavka", "holítko", "pěna na holení", "vložka", "tampón", "odličovač", "krém"
+  ],
 
-        // STOLOVÁNÍ
-        "Talíř mělký", "Talíř hluboký", "Talíř dezertní", "Miska", "Sklenice na vodu", "Sklenice na víno", "Hrnek", "Příbory sada", "Lžíce", "Lžička", "Vidlička", "Nůž jídelní", "Brčka",
+  "Domácnost a Úklid": [
+    "jar", "saponát", "tablety do myčky", "sůl do myčky", "leštidlo", "prací prášek", 
+    "prací gel", "aviváž", "čistič", "savo", "domestos", "houbička", "drátěnka", 
+    "hadřík", "utěrka", "pytel na odpad", "sáček do koše", "alobal", "potravinová fólie", 
+    "pečicí papír", "svíčka", "zapalovač", "baterie", "žárovka"
+  ],
 
-        // SPOTŘEBNÍ MATERIÁL & BALENÍ
-        "Pečicí papír", "Alobal", "Potravinová fólie", "Sáčky do mrazáku", "Sáčky na svačinu", "Pytle do koše 35l", "Pytle do koše 60l", "Papírové utěrky", "Servítky / Ubrousky", "Alobalová miska",
-
-        // ČIŠTĚNÍ & HYGIENA KUCHYNĚ
-        "Jar na nádobí", "Kapsle do myčky", "Sůl do myčky", "Leštidlo do myčky", "Čistič na nerez", "Čistič na trouby", "Písek na nádobí", "Houbičky na nádobí", "Drátěnka nerezová", "Švédská utěrka", "Hadřík na nádobí", "Rukavice gumové", "Mýdlo na ruce"
-      ]
-    };
+  "Kuchyňské vybavení": [
+    "pánev", "hrnec", "kastrol", "poklice", "nůž", "prkénko", "vařečka", "sběračka", 
+    "mísa", "miska", "talíř", "sklenice", "sklenička", "hrnek", "příbor", "vidlička", 
+    "lžíce", "lžička", "otvírák", "vývrtka", "škrabka", "struhadlo", "cedník", "sítko", 
+    "válek", "forma na pečení", "plech", "odměrka", "kuchyňská váha", "termoska", "dóza"
+  ]
+};
 
     let items = [];
     let currentCategory = 'food';
