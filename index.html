@@ -19,6 +19,7 @@
       --primary-hover: #059669;
       --primary-light: #d1fae5;
       --danger: #ef4444;
+      --danger-light: #fee2e2;
       --border: #e2e8f0;
       --radius-sm: 8px;
       --radius-md: 12px;
@@ -34,10 +35,11 @@
     .header-title { font-size: 1.5rem; font-weight: 800; margin-bottom: 8px; text-align: center; background: linear-gradient(to right, #10b981, #059669); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
     
     /* Správa více seznamů & Sdílení */
-    .lists-bar { display: flex; gap: 8px; margin-bottom: 12px; align-items: center; }
-    .select-list { flex: 1; padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 0.9rem; font-weight: 600; background: #f8fafc; color: var(--text-main); outline: none; }
-    .btn-secondary { background: #e2e8f0; color: var(--text-main); border: none; padding: 8px 12px; border-radius: var(--radius-sm); font-size: 0.85rem; font-weight: 600; cursor: pointer; }
-    .btn-share { background: var(--primary-light); color: var(--primary-hover); border: none; padding: 8px 12px; border-radius: var(--radius-sm); font-size: 0.85rem; font-weight: 700; cursor: pointer; }
+    .lists-bar { display: flex; gap: 6px; margin-bottom: 12px; align-items: center; flex-wrap: wrap; }
+    .select-list { flex: 1; min-width: 120px; padding: 8px 10px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 0.9rem; font-weight: 600; background: #f8fafc; color: var(--text-main); outline: none; }
+    .btn-secondary { background: #e2e8f0; color: var(--text-main); border: none; padding: 8px 10px; border-radius: var(--radius-sm); font-size: 0.85rem; font-weight: 600; cursor: pointer; }
+    .btn-delete-list { background: var(--danger-light); color: var(--danger); border: none; padding: 8px 10px; border-radius: var(--radius-sm); font-size: 0.85rem; font-weight: 600; cursor: pointer; }
+    .btn-share { background: var(--primary-light); color: var(--primary-hover); border: none; padding: 8px 10px; border-radius: var(--radius-sm); font-size: 0.85rem; font-weight: 700; cursor: pointer; }
 
     .nav-tabs { display: flex; background-color: #f1f5f9; padding: 4px; border-radius: var(--radius-md); margin-bottom: 12px; gap: 4px; }
     .nav-btn { flex: 1; padding: 8px 4px; border: none; background: none; font-size: 0.85rem; font-weight: 600; color: var(--text-muted); cursor: pointer; border-radius: var(--radius-sm); }
@@ -62,14 +64,17 @@
 
     ul { list-style: none; }
     li { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f8fafc; }
-    .item-left { display: flex; align-items: center; gap: 10px; flex: 1; cursor: pointer; }
-    .custom-checkbox { width: 24px; height: 24px; border: 2px solid #cbd5e1; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .item-left { display: flex; align-items: center; gap: 10px; flex: 1; }
+    .custom-checkbox { width: 24px; height: 24px; border: 2px solid #cbd5e1; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; cursor: pointer; }
     .custom-checkbox svg { width: 12px; height: 12px; fill: none; stroke: white; stroke-width: 3; opacity: 0; }
     li.completed .custom-checkbox { background-color: var(--primary); border-color: var(--primary); }
     li.completed .custom-checkbox svg { opacity: 1; }
     li.completed .item-text { text-decoration: line-through; color: var(--text-muted); }
     .qty-badge { background-color: #f1f5f9; color: var(--text-main); font-size: 0.8rem; font-weight: 700; padding: 2px 6px; border-radius: 10px; }
-    .btn-delete { background: none; border: none; color: #cbd5e1; padding: 8px; cursor: pointer; }
+    
+    /* Tlačítko odstranění položky */
+    .btn-delete { background: none; border: none; color: #94a3b8; padding: 8px; cursor: pointer; font-size: 1.1rem; line-height: 1; transition: color 0.2s; }
+    .btn-delete:hover, .btn-delete:active { color: var(--danger); }
     
     .frequent-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; margin-top: 10px; }
     .frequent-card { background: #f8fafc; border: 1px solid var(--border); padding: 10px; border-radius: var(--radius-md); display: flex; flex-direction: column; justify-content: space-between; gap: 8px; }
@@ -91,6 +96,7 @@
     <div class="lists-bar">
       <select id="select-list" class="select-list" onchange="changeList(this.value)"></select>
       <button class="btn-secondary" onclick="createList()">+ Nový</button>
+      <button class="btn-delete-list" onclick="deleteCurrentList()" title="Odstranit celý seznam">🗑️</button>
       <button class="btn-share" onclick="shareList()">🔗 Sdílet</button>
     </div>
 
@@ -162,7 +168,7 @@
         "mléko", "máslo", "sýr", "eidam", "gouda", "hermelín", "camembert", "niva", 
         "balkánský sýr", "mozzarella", "parmezán", "tvaroh", "jogurt", "smetana", 
         "šlehačka", "tavený sýr", "lučina", "žervé", "cottage", "pribináček", "termix", 
-        "podmáslí", "kefír", "syrovátka", "kvasnice", "droždí", "pudink", "listové těsto", "vejce"
+        "podmáslí", "kefír", "syrovátka", "kvasnice", "droždí", "pudink", "listové těsto"
       ],
 
       "Maso a uzeniny": [
@@ -217,9 +223,9 @@
 
     const allPresetItems = Array.from(new Set(Object.values(categoryRules).flat()));
 
-    // --- SPRÁVA DÁT A LOKÁLNÍHO ÚLOŽIŠTĚ ---
-    let allLists = JSON.parse(localStorage.getItem('shopping_lists')) || { "Hlavní seznam": [] };
-    let currentListName = localStorage.getItem('current_list_name') || Object.keys(allLists)[0] || "Hlavní seznam";
+    // --- SPRÁVA DAT A LOKÁLNÍHO ÚLOŽIŠTĚ ---
+    let allLists = JSON.parse(localStorage.getItem('shopping_lists')) || { "Můj seznam": [] };
+    let currentListName = localStorage.getItem('current_list_name') || Object.keys(allLists)[0] || "Můj seznam";
     let items = allLists[currentListName] || [];
     let currentCategory = 'food';
     let currentView = 'list';
@@ -283,6 +289,21 @@
           allLists[trimmed] = [];
         }
         changeList(trimmed);
+      }
+    }
+
+    function deleteCurrentList() {
+      const keys = Object.keys(allLists);
+      if (keys.length <= 1) {
+        alert("Nelze smazat jediný seznam. Nejprve vytvořte nový.");
+        return;
+      }
+
+      if (confirm(`Opravdu chcete smazat celý seznam "${currentListName}"?`)) {
+        delete allLists[currentListName];
+        currentListName = Object.keys(allLists)[0];
+        items = allLists[currentListName] || [];
+        saveAll();
       }
     }
 
@@ -391,12 +412,14 @@
       activeItems.forEach(item => {
         const li = document.createElement('li');
         li.innerHTML = `
-          <div class="item-left" onclick="toggleComplete('${item.id}', true)">
-            <div class="custom-checkbox"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
+          <div class="item-left">
+            <div class="custom-checkbox" onclick="toggleComplete('${item.id}', true)">
+              <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            </div>
             ${item.qty ? `<span class="qty-badge">${item.qty}</span>` : ''}
             <span class="item-text">${item.text}</span>
           </div>
-          <button class="btn-delete" onclick="deleteItem('${item.id}')">✕</button>
+          <button class="btn-delete" title="Odstranit položku" onclick="deleteItem('${item.id}')">✕</button>
         `;
         container.appendChild(li);
       });
@@ -416,11 +439,13 @@
         const li = document.createElement('li');
         li.className = 'completed';
         li.innerHTML = `
-          <div class="item-left" onclick="toggleComplete('${item.id}', false)">
-            <div class="custom-checkbox"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
+          <div class="item-left">
+            <div class="custom-checkbox" onclick="toggleComplete('${item.id}', false)">
+              <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            </div>
             <span class="item-text">${item.text}</span>
           </div>
-          <button class="btn-delete" onclick="deleteItem('${item.id}')">✕</button>
+          <button class="btn-delete" title="Odstranit položku" onclick="deleteItem('${item.id}')">✕</button>
         `;
         container.appendChild(li);
       });
