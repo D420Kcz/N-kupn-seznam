@@ -3,18 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Nákupní Seznam</title>
+  <title>Nákupní Seznam Live</title>
   
-  <!-- Odkaz na PWA Manifest -->
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3081/3081840.png">
-  
-  <!-- Podpora pro mobilní PWA (Web App) -->
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <meta name="apple-mobile-web-app-title" content="Nákupní Seznam">
   <meta name="theme-color" content="#10b981">
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
   <style>
     :root {
@@ -31,727 +28,371 @@
       --radius-md: 12px;
       --radius-lg: 20px;
       --shadow-sm: 0 1px 3px rgba(0,0,0,0.05);
-      --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.05);
       --shadow-lg: 0 10px 25px -5px rgba(0,0,0,0.08);
     }
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      -webkit-tap-highlight-color: transparent;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
+    body { background: var(--bg-gradient); color: var(--text-main); display: flex; justify-content: center; padding: 12px; min-height: 100vh; }
+    .app-container { background: var(--card-bg); width: 100%; max-width: 500px; padding: 20px 16px; border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); align-self: flex-start; }
+    
+    .header-title { font-size: 1.5rem; font-weight: 800; margin-bottom: 12px; text-align: center; background: linear-gradient(to right, #10b981, #059669); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    
+    .nav-tabs { display: flex; background-color: #f1f5f9; padding: 4px; border-radius: var(--radius-md); margin-bottom: 12px; gap: 4px; }
+    .nav-btn { flex: 1; padding: 8px 4px; border: none; background: none; font-size: 0.85rem; font-weight: 600; color: var(--text-muted); cursor: pointer; border-radius: var(--radius-sm); }
+    .nav-btn.active { background-color: #ffffff; color: var(--primary-hover); box-shadow: var(--shadow-sm); }
 
-    body {
-      background: var(--bg-gradient);
-      color: var(--text-main);
-      display: flex;
-      justify-content: center;
-      padding: 12px;
-      min-height: 100vh;
-      -webkit-font-smoothing: antialiased;
-    }
+    .sub-tabs { display: flex; background-color: #e2e8f0; padding: 3px; border-radius: var(--radius-sm); margin-bottom: 16px; gap: 4px; }
+    .sub-btn { flex: 1; padding: 6px 4px; border: none; background: none; font-size: 0.8rem; font-weight: 700; color: var(--text-muted); cursor: pointer; border-radius: 6px; }
+    .sub-btn.active { background-color: var(--primary); color: white; }
 
-    .app-container {
-      background: var(--card-bg);
-      width: 100%;
-      max-width: 500px;
-      padding: 20px 16px;
-      border-radius: var(--radius-lg);
-      box-shadow: var(--shadow-lg);
-      align-self: flex-start;
-      margin-top: env(safe-area-inset-top, 0px);
-      margin-bottom: env(safe-area-inset-bottom, 0px);
-    }
-
-    .header-title {
-      font-size: 1.5rem;
-      font-weight: 800;
-      margin-bottom: 16px;
-      text-align: center;
-      background: linear-gradient(to right, #10b981, #059669);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-
-    .top-controls {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 20px;
-    }
-
-    .tabs {
-      display: flex;
-      flex: 1;
-      background-color: #f1f5f9;
-      padding: 4px;
-      border-radius: var(--radius-md);
-    }
-
-    .tab-btn {
-      flex: 1;
-      padding: 10px 6px;
-      border: none;
-      background: none;
-      font-size: 0.9rem;
-      font-weight: 600;
-      color: var(--text-muted);
-      cursor: pointer;
-      border-radius: var(--radius-sm);
-      transition: all 0.2s;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-    }
-
-    .tab-btn.active {
-      background-color: #ffffff;
-      color: var(--primary-hover);
-      box-shadow: var(--shadow-sm);
-    }
-
-    .btn-share {
-      background-color: #f1f5f9;
-      border: none;
-      color: var(--primary-hover);
-      padding: 0 12px;
-      border-radius: var(--radius-md);
-      font-size: 0.9rem;
-      font-weight: 600;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      transition: all 0.2s;
-    }
-
-    .btn-share:active {
-      background-color: var(--primary-light);
-      transform: scale(0.96);
-    }
-
-    .btn-share svg {
-      width: 18px;
-      height: 18px;
-      fill: currentColor;
-    }
-
-    .input-group {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 24px;
-      position: relative;
-    }
-
-    .input-base {
-      padding: 12px 14px;
-      border: 2px solid var(--border);
-      border-radius: var(--radius-md);
-      font-size: 16px;
-      outline: none;
-      transition: all 0.2s;
-      background-color: #f8fafc;
-    }
-
-    .input-base:focus {
-      background-color: #ffffff;
-      border-color: var(--primary);
-    }
-
-    .input-qty {
-      width: 70px;
-      text-align: center;
-      flex-shrink: 0;
-    }
-
-    .input-wrapper {
-      position: relative;
-      flex: 1;
-      min-width: 0;
-    }
-
-    .input-wrapper input {
-      width: 100%;
-    }
-
-    .btn-add {
-      background-color: var(--primary);
-      color: white;
-      border: none;
-      width: 48px;
-      height: 48px;
-      border-radius: var(--radius-md);
-      font-size: 1.8rem;
-      font-weight: 300;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-      touch-action: manipulation;
-    }
-
-    .btn-add:active {
-      background-color: var(--primary-hover);
-      transform: scale(0.96);
-    }
-
-    .autocomplete-list {
-      position: absolute;
-      top: calc(100% + 6px);
-      left: 0;
-      right: 0;
-      background: #ffffff;
-      border: 1px solid var(--border);
-      border-radius: var(--radius-md);
-      box-shadow: var(--shadow-lg);
-      max-height: 220px;
-      overflow-y: auto;
-      z-index: 100;
-      padding: 4px 0;
-    }
-
-    .autocomplete-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 12px 16px;
-      font-size: 0.95rem;
-      cursor: pointer;
-      border-bottom: 1px solid #f1f5f9;
-    }
-
-    .autocomplete-item:active, .autocomplete-item.selected {
-      background-color: var(--primary-light);
-      color: var(--primary-hover);
-    }
-
-    .ac-category {
-      font-size: 0.75rem;
-      background-color: #e2e8f0;
-      color: var(--text-muted);
-      padding: 3px 8px;
-      border-radius: 12px;
-      font-weight: 600;
-    }
-
-    .category-group {
-      margin-bottom: 20px;
-      background: #ffffff;
-      touch-action: pan-y;
-    }
-
-    .category-group.dragging {
-      opacity: 0.4;
-      background: #f1f5f9;
-    }
-
-    .category-header {
-      font-size: 0.8rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: var(--text-muted);
-      margin-bottom: 8px;
-      padding-bottom: 6px;
-      border-bottom: 2px solid #f1f5f9;
-      display: flex;
-      align-items: center;
-      user-select: none;
-    }
-
-    .category-header::before {
-      content: "⋮⋮";
-      margin-right: 10px;
-      color: #cbd5e1;
-      font-size: 1.2rem;
-      letter-spacing: -2px;
-      padding: 4px;
-    }
+    .input-group { display: flex; gap: 8px; margin-bottom: 20px; position: relative; }
+    .input-base { padding: 12px; border: 2px solid var(--border); border-radius: var(--radius-md); font-size: 16px; outline: none; background-color: #f8fafc; }
+    .input-base:focus { background-color: #ffffff; border-color: var(--primary); }
+    .input-qty { width: 70px; text-align: center; flex-shrink: 0; }
+    .input-wrapper { position: relative; flex: 1; min-width: 0; }
+    .input-wrapper input { width: 100%; }
+    .btn-add { background-color: var(--primary); color: white; border: none; width: 48px; height: 48px; border-radius: var(--radius-md); font-size: 1.8rem; cursor: pointer; flex-shrink: 0; }
+    
+    /* Našeptávač */
+    .autocomplete-list { position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: #ffffff; border: 1px solid var(--border); border-radius: var(--radius-md); box-shadow: var(--shadow-lg); max-height: 220px; overflow-y: auto; z-index: 100; }
+    .autocomplete-item { padding: 12px 14px; font-size: 0.95rem; cursor: pointer; border-bottom: 1px solid #f1f5f9; }
+    .autocomplete-item:active { background-color: var(--primary-light); color: var(--primary-hover); }
 
     ul { list-style: none; }
-
-    li {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 10px 0;
-      border-bottom: 1px solid #f8fafc;
-    }
-
-    .item-left {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      flex: 1;
-      cursor: pointer;
-      min-width: 0;
-      padding: 4px 0;
-    }
-
-    .custom-checkbox {
-      width: 26px;
-      height: 26px;
-      border: 2px solid #cbd5e1;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.2s;
-      flex-shrink: 0;
-    }
-
-    .custom-checkbox svg {
-      width: 14px;
-      height: 14px;
-      fill: none;
-      stroke: white;
-      stroke-width: 3;
-      stroke-linecap: round;
-      stroke-linejoin: round;
-      opacity: 0;
-      transform: scale(0.5);
-      transition: all 0.2s;
-    }
-
-    li.completed .custom-checkbox {
-      background-color: var(--primary);
-      border-color: var(--primary);
-    }
-
-    li.completed .custom-checkbox svg {
-      opacity: 1;
-      transform: scale(1);
-    }
-
-    li.completed .item-text {
-      text-decoration: line-through;
-      color: var(--text-muted);
-    }
-
-    li.completed .qty-badge {
-      opacity: 0.5;
-    }
-
-    .qty-badge {
-      background-color: #f1f5f9;
-      color: var(--text-main);
-      font-size: 0.8rem;
-      font-weight: 700;
-      padding: 3px 8px;
-      border-radius: 12px;
-      flex-shrink: 0;
-    }
-
-    .item-text {
-      font-size: 0.95rem;
-      font-weight: 500;
-      word-break: break-word;
-    }
-
-    .btn-delete {
-      background: none;
-      border: none;
-      color: #cbd5e1;
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      flex-shrink: 0;
-      touch-action: manipulation;
-    }
-
-    .btn-delete svg {
-      width: 20px;
-      height: 20px;
-      fill: currentColor;
-    }
-
-    .btn-delete:active {
-      color: var(--danger);
-      background-color: #fee2e2;
-    }
-
-    .empty-message {
-      text-align: center;
-      color: var(--text-muted);
-      font-size: 0.95rem;
-      padding: 32px 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 8px;
-    }
+    li { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f8fafc; }
+    .item-left { display: flex; align-items: center; gap: 10px; flex: 1; cursor: pointer; }
+    .custom-checkbox { width: 24px; height: 24px; border: 2px solid #cbd5e1; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .custom-checkbox svg { width: 12px; height: 12px; fill: none; stroke: white; stroke-width: 3; opacity: 0; }
+    li.completed .custom-checkbox { background-color: var(--primary); border-color: var(--primary); }
+    li.completed .custom-checkbox svg { opacity: 1; }
+    li.completed .item-text { text-decoration: line-through; color: var(--text-muted); }
+    .qty-badge { background-color: #f1f5f9; color: var(--text-main); font-size: 0.8rem; font-weight: 700; padding: 2px 6px; border-radius: 10px; }
+    .btn-delete { background: none; border: none; color: #cbd5e1; padding: 8px; cursor: pointer; }
     
-    .empty-message span {
-      font-size: 2.2rem;
-    }
+    .frequent-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; margin-top: 10px; }
+    .frequent-card { background: #f8fafc; border: 1px solid var(--border); padding: 10px; border-radius: var(--radius-md); display: flex; flex-direction: column; justify-content: space-between; gap: 8px; }
+    .frequent-title { font-size: 0.9rem; font-weight: 600; }
+    .frequent-count { font-size: 0.75rem; color: var(--text-muted); }
+    .btn-quick-add { background: var(--primary-light); color: var(--primary-hover); border: none; padding: 6px; border-radius: var(--radius-sm); font-weight: 700; cursor: pointer; }
+
+    .empty-msg { text-align: center; color: var(--text-muted); padding: 24px 0; }
+    .view-section { display: none; }
+    .view-section.active { display: block; }
   </style>
 </head>
 <body>
 
   <div class="app-container">
-    <h1 class="header-title">Můj Nákup</h1>
-    
-    <div class="top-controls">
-      <div class="tabs">
-        <button type="button" class="tab-btn active" id="tab-food">🍎 Potraviny</button>
-        <button type="button" class="tab-btn" id="tab-kitchen">🍳 Kuchyně</button>
-      </div>
-      <button type="button" class="btn-share" id="btn-share" title="Sdílet seznam přes WhatsApp / SMS">
-        <svg viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/></svg>
-        Sdílet
-      </button>
+    <h1 class="header-title">Můj Nákup Live</h1>
+
+    <div class="nav-tabs">
+      <button class="nav-btn active" onclick="switchView('list', event)">🛒 Seznam</button>
+      <button class="nav-btn" onclick="switchView('frequent', event)">⭐ Časté</button>
+      <button class="nav-btn" onclick="switchView('history', event)">📜 Historie</button>
     </div>
 
-    <form id="todo-form" class="input-group">
-      <input type="text" id="qty-input" class="input-base input-qty" placeholder="Ks/kg" inputmode="decimal" autocomplete="off" />
-      <div class="input-wrapper">
-        <input type="text" id="todo-input" class="input-base" placeholder="Co koupit?" autocomplete="off" autocorrect="off" spellcheck="false" required />
-        <div id="autocomplete-list" class="autocomplete-list" style="display: none;"></div>
-      </div>
-      <button type="submit" class="btn-add" title="Přidat">+</button>
-    </form>
+    <div class="sub-tabs">
+      <button class="sub-btn active" id="tab-food" onclick="switchCategory('food')">🍎 Potraviny & Nápoje</button>
+      <button class="sub-btn" id="tab-kitchen" onclick="switchCategory('kitchen')">🍳 Kuchyně & Potřeby</button>
+    </div>
 
-    <div id="sections-container"></div>
-    <div id="empty-msg" class="empty-message">
-      <span>🛒</span>
-      <p>Seznam je zatím prázdný.</p>
+    <!-- SEZNAM -->
+    <div id="view-list" class="view-section active">
+      <form id="todo-form" class="input-group">
+        <input type="text" id="qty-input" class="input-base input-qty" placeholder="Ks" inputmode="decimal" />
+        <div class="input-wrapper">
+          <input type="text" id="todo-input" class="input-base" placeholder="Přidat položku..." autocomplete="off" autocorrect="off" spellcheck="false" required />
+          <div id="autocomplete-list" class="autocomplete-list" style="display: none;"></div>
+        </div>
+        <button type="submit" class="btn-add">+</button>
+      </form>
+      <div id="active-items-container"></div>
+    </div>
+
+    <!-- ČASTÉ NÁKUPY -->
+    <div id="view-frequent" class="view-section">
+      <p style="font-size:0.85rem; color:var(--text-muted);">Nejčastěji kupované položky:</p>
+      <div id="frequent-container" class="frequent-grid"></div>
+    </div>
+
+    <!-- HISTORIE -->
+    <div id="view-history" class="view-section">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <span style="font-size:0.85rem; color:var(--text-muted);">Již nakoupeno:</span>
+        <button onclick="clearHistory()" style="background:none; border:none; color:var(--danger); font-size:0.8rem; cursor:pointer;">Vymazat historii</button>
+      </div>
+      <div id="history-items-container"></div>
     </div>
   </div>
 
   <script>
-    // Registrace Service Workeru pro PWA
+    // --- FIREBASE KONFIGURACE ---
+    const firebaseConfig = {
+      apiKey: "VLOZTE_VAS_API_KEY",
+      authDomain: "VLOZTE_VAS_PROJECT_ID.firebaseapp.com",
+      databaseURL: "https://VLOZTE_VAS_PROJECT_ID-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "VLOZTE_VAS_PROJECT_ID",
+      storageBucket: "VLOZTE_VAS_PROJECT_ID.appspot.com",
+      messagingSenderId: "VLOZTE_SENDER_ID",
+      appId: "VLOZTE_APP_ID"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database().ref('shopping_list');
+
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js')
-          .catch(err => console.log('ServiceWorker registrace selhala: ', err));
-      });
+      window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js'));
     }
 
-    const foodData = {
-      "Ovoce a zelenina": ["Jablka", "Banány", "Citrony", "Brambory", "Cibule", "Česnek", "Mrkev", "Rajčata", "Okurka", "Paprika", "Salát", "Brokolice"],
-      "Pečivo": ["Chléb", "Rohlíky", "Housky", "Bageta", "Toustový chléb", "Vánočka"],
-      "Mléčné výrobky a vejce": ["Mléko", "Máslo", "Vejce", "Bílý jogurt", "Eidam", "Gouda", "Mozzarella", "Tvaroh", "Smetana"],
-      "Maso a uzeniny": ["Kuřecí prsa", "Mleté maso", "Šunka", "Párky", "Slanina", "Klobása"],
-      "Trvanlivé a obiloviny": ["Rýže", "Těstoviny", "Ovesné vločky", "Mouka hladká", "Cukr krystal", "Olej", "Fazole v konzervě"],
-      "Ostatní potraviny": ["Káva", "Čaj", "Voda", "Džus", "Čokoláda", "Sůl", "Pepř", "Kečup", "Majonéza"]
+    // --- ROZŠÍŘENÁ DATABÁZE POLOŽEK PRO PREDIKTIVNÍ ZADÁVÁNÍ ---
+    const presetData = {
+      food: [
+        // ZELENINA
+        "Brambory", "Brambory rané", "Cibule žlutá", "Cibule červená", "Cibulka jarní", "Česnek", "Mrkev", "Rajčata", "Rajčata keříková", "Rajčata cherry", "Okurka hadovka", "Okurky nakládačky", "Paprika červená", "Paprika zelená", "Paprika žlutá", "Paprikový lusk", "Brokolice", "Květák", "Cuketa", "Lilek", "Pór", "Celer", "Petržel", "Křen", "Špenát čerstvý", "Špenát mražený", "Hrášek mražený", "Kukuřice plech", "Kukuřice čerstvá", "Fazole červené", "Fazole bílé", "Červená řepa", "Hlávkový salát", "Ledový salát", "Rukola", "Polníček", "Pekingské zelí", "Zelí bílé", "Zelí červené", "Kysané zelí", "Patizon", "Dýně hokaido", "Dýně máslová", "Ředkvičky", "Kapr/Rybí filé",
+
+        // OVOCE
+        "Jablka", "Hrušky", "Banány", "Citrony", "Pomeranče", "Mandarinky", "Grep", "Limetky", "Jahody", "Maliny", "Borůvky", "Ostružiny", "Nektarinky", "Broskve", "Meruňky", "Švestky", "Víno hroznové bílé", "Víno hroznové červené", "Meloun vodní", "Meloun cukrový", "Ananas", "Mango", "Avokádo", "Kiwi", "Granátové jablko", "Fíky čerstvé", "Kaki", "Brusinky",
+
+        // MĚKKÉ & TRVANLIVÉ PEČIVO
+        "Chléb šumava", "Chléb konzumní", "Chléb toastový světlý", "Chléb toastový tmavý", "Rohlíky", "Housky", "Kaiserka", "Bageta", "Ciabatta", "Bulka na burger", "Tortilla", "Vánočka", "Muffin", "Donut", "Koblížek", "Croissant", "Pletenka",
+
+        // MLÉČNÉ VÝROBKY & VEJCE
+        "Mléko plnotučné", "Mléko polotučné", "Mléko trvanlivé", "Mléko bezlaktozové", "Máslo", "Vejce M", "Vejce L", "Smetana ke šlehání", "Smetana kysaná", "Tvaroh jemný", "Tvaroh tučný", "Tvaroh tvrdý", "Jogurt bílý", "Jogurt ovocný", "Ovocná kapsička", "Termix", "Eidam 30%", "Eidam 45%", "Gouda", "Ementál", "Cheddar", "Mozzarella", "Hermelín", "Niva", "Balkan cheese", "Parmezán", "Mascarpone", "Kefír", "Acidofilní mléko",
+
+        // MASO, UZENINY & RYBY
+        "Kuřecí prsa", "Kuřecí stehna", "Kuře celé", "Mleté maso mix", "Hovězí zadní", "Hovězí přední", "Vepřová krkovice", "Vepřová pečeně", "Vepřová panenka", "Vepřová plec", "Šunka kuřecí", "Šunka vepřová", "Šunka nejvyšší jakosti", "Gothaj", "Vysočina", "Párky vídeňské", "Párky debrecínské", "Klobása", "Slanina", "Uzené maso", "Játra", "Losos filet", "Trestka filet", "Tuna plechovky", "Sardinky",
+
+        // TRVANLIVÉ POTRAVINY & PEČENÍ
+        "Rýže basmati", "Rýže jasmínová", "Těstoviny špagety", "Těstoviny kolínka", "Těstoviny penne", "Těstoviny fusilli", "Ovesné vločky", "Cukr krupice", "Cukr moučka", "Cukr třtinový", "Mouka hladká", "Mouka polohrubá", "Mouka hrubá", "Strouhanka", "Krupice", "Kypřicí prášek", "Droždí čerstvé", "Droždí sušené", "Vanilkový cukr", "Pudink", "Solamyl / Škrob", "Kakao", "Čokoláda na vaření", "Sůl", "Pepř mletý", "Paprika sladká", "Kmín", "Majoránka", "Bobkový list", "Nové koření", "Olej slunečnicový", "Olej řepkový", "Olej olivový extra panenský", "Ocel / Ocet", "Balsamico", "Kečup jemný", "Kečup ostrý", "Majonéza", "Tatarská omáčka", "Hořčice plnotučná", "Hořčice krémžská",
+
+        // NÁPOJE
+        "Voda neperlivá", "Voda jemně perlivá", "Voda perlivá", "Minerálka Magnesia", "Džus pomeranč 100%", "Džus jablko 100%", "Kola", "Kofola", "Tonic", "Káva zrnková", "Káva mletá", "Káva instantní", "Čaj černý", "Čaj zelený", "Čaj ovocný", "Čaj bylinkový", "Pivo světlé", "Pivo ležák", "Pivo nealko", "Víno bílé", "Víno červené", "Víno růžové", "Prosecco / Sekt"
+      ],
+      kitchen: [
+        // NÁDOBÍ & PEČENÍ
+        "Hrnec malý", "Hrnec velký", "Rendlík", "Pánev nepřilnavá", "Pánev na lívance", "Wok", "Plech na pečení", "Forma na bábovku", "Forma na dort", "Zapékací mísa", "Mísa nerez", "Mísa plastová", "Prkénko dřevěné", "Prkénko plastové",
+
+        // NÁČINÍ & POMŮCKY
+        "Nůž kuchařský", "Nůž na pečivo", "Nůž malý", "Obracečka", "Vařečka", "Naběračka", "Škrabka na brambory", "Struhadlo", "Lis na česnek", "Otvírák na konzervy", "Otvírák na víno", "Krajáč / Kuchyňské nůžky", "Šlehačka ruční", "Minutka kuchyňská", "Váha kuchyňská", "Teploměr na maso", "Cedník", "Sítko na čaj",
+
+        // STOLOVÁNÍ
+        "Talíř mělký", "Talíř hluboký", "Talíř dezertní", "Miska", "Sklenice na vodu", "Sklenice na víno", "Hrnek", "Příbory sada", "Lžíce", "Lžička", "Vidlička", "Nůž jídelní", "Brčka",
+
+        // SPOTŘEBNÍ MATERIÁL & BALENÍ
+        "Pečicí papír", "Alobal", "Potravinová fólie", "Sáčky do mrazáku", "Sáčky na svačinu", "Pytle do koše 35l", "Pytle do koše 60l", "Papírové utěrky", "Servítky / Ubrousky", "Alobalová miska",
+
+        // ČIŠTĚNÍ & HYGIENA KUCHYNĚ
+        "Jar na nádobí", "Kapsle do myčky", "Sůl do myčky", "Leštidlo do myčky", "Čistič na nerez", "Čistič na trouby", "Písek na nádobí", "Houbičky na nádobí", "Drátěnka nerezová", "Švédská utěrka", "Hadřík na nádobí", "Rukavice gumové", "Mýdlo na ruce"
+      ]
     };
-
-    const kitchenData = {
-      "Pečení a balení": ["Pečicí papír", "Alobal", "Potravinová fólie", "Sáčky na svačinu", "Sáčky do mrazáku"],
-      "Úklid kuchyně": ["Jar na nádobí", "Houbičky", "Kapsle do myčky", "Sůl do myčky", "Papírové utěrky", "Pytle do koše"],
-      "Nádobí a náčiní": ["Hrnec", "Pánev", "Vařečka", "Nůž", "Prkénko", "Sklenice", "Talíře"]
-    };
-
-    let currentTab = 'food';
-
-    function getCurrentCategories() {
-      return currentTab === 'food' ? foodData : kitchenData;
-    }
-
-    function getStorageKeys() {
-      return {
-        itemsKey: currentTab === 'food' ? 'shopList_Food' : 'shopList_Kitchen',
-        orderKey: currentTab === 'food' ? 'shopOrder_Food' : 'shopOrder_Kitchen'
-      };
-    }
-
-    function getDatabase() {
-      const data = getCurrentCategories();
-      return Object.entries(data).flatMap(([category, items]) => 
-        items.map(name => ({ name, category }))
-      );
-    }
-
-    const form = document.getElementById('todo-form');
-    const qtyInput = document.getElementById('qty-input');
-    const input = document.getElementById('todo-input');
-    const sectionsContainer = document.getElementById('sections-container');
-    const emptyMsg = document.getElementById('empty-msg');
-    const autocompleteList = document.getElementById('autocomplete-list');
-    const tabFood = document.getElementById('tab-food');
-    const tabKitchen = document.getElementById('tab-kitchen');
-    const btnShare = document.getElementById('btn-share');
 
     let items = [];
-    let categoryOrder = [];
+    let currentCategory = 'food';
+    let currentView = 'list';
 
-    function loadState() {
-      const { itemsKey, orderKey } = getStorageKeys();
-      items = JSON.parse(localStorage.getItem(itemsKey)) || [];
-      categoryOrder = JSON.parse(localStorage.getItem(orderKey)) || Object.keys(getCurrentCategories()).concat("Ostatní");
-    }
+    // Načítání v reálném čase z Firebase
+    db.on('value', (snapshot) => {
+      const data = snapshot.val();
+      items = data ? Object.keys(data).map(key => ({ id: key, ...data[key] })) : [];
+      renderAll();
+    });
 
-    function saveState() {
-      const { itemsKey, orderKey } = getStorageKeys();
-      localStorage.setItem(itemsKey, JSON.stringify(items));
-      localStorage.setItem(orderKey, JSON.stringify(categoryOrder));
-    }
+    const todoInput = document.getElementById('todo-input');
+    const autocompleteList = document.getElementById('autocomplete-list');
 
+    // Funkce pro odstranění diakritiky (pro snazší vyhledávání)
     function removeDiacritics(str) {
       return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
     }
 
-    function findCategory(itemName) {
-      const db = getDatabase();
-      const match = db.find(i => removeDiacritics(i.name) === removeDiacritics(itemName));
-      return match ? match.category : "Ostatní";
-    }
-
-    function closeAutocomplete() {
+    // Našeptávač logika
+    todoInput.addEventListener('input', () => {
+      const val = todoInput.value.trim();
+      const normalizedVal = removeDiacritics(val);
       autocompleteList.innerHTML = '';
-      autocompleteList.style.display = 'none';
-    }
 
-    function renderList() {
-      sectionsContainer.innerHTML = '';
-      emptyMsg.style.display = items.length === 0 ? 'flex' : 'none';
-
-      if (items.length === 0) return;
-
-      const grouped = items.reduce((acc, item) => {
-        const cat = item.category || "Ostatní";
-        if (!acc[cat]) acc[cat] = [];
-        acc[cat].push(item);
-        return acc;
-      }, {});
-
-      categoryOrder.forEach(category => {
-        if (!grouped[category] || grouped[category].length === 0) return;
-
-        const groupEl = document.createElement('div');
-        groupEl.className = 'category-group';
-        groupEl.dataset.category = category;
-
-        const header = document.createElement('div');
-        header.className = 'category-header';
-        header.textContent = category;
-        groupEl.appendChild(header);
-
-        const ul = document.createElement('ul');
-
-        grouped[category].forEach(item => {
-          const originalIndex = items.findIndex(i => i.id === item.id);
-          const li = document.createElement('li');
-          if (item.completed) li.classList.add('completed');
-
-          const leftDiv = document.createElement('div');
-          leftDiv.className = 'item-left';
-
-          const checkboxDiv = document.createElement('div');
-          checkboxDiv.className = 'custom-checkbox';
-          checkboxDiv.innerHTML = `<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
-          leftDiv.appendChild(checkboxDiv);
-
-          if (item.qty) {
-            const qtySpan = document.createElement('span');
-            qtySpan.className = 'qty-badge';
-            qtySpan.textContent = item.qty;
-            leftDiv.appendChild(qtySpan);
-          }
-
-          const span = document.createElement('span');
-          span.className = 'item-text';
-          span.textContent = item.text;
-          leftDiv.appendChild(span);
-
-          const deleteBtn = document.createElement('button');
-          deleteBtn.className = 'btn-delete';
-          deleteBtn.type = 'button';
-          deleteBtn.innerHTML = `<svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>`;
-
-          leftDiv.addEventListener('click', () => {
-            items[originalIndex].completed = !items[originalIndex].completed;
-            saveState();
-            renderList();
-          });
-
-          deleteBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            items.splice(originalIndex, 1);
-            saveState();
-            renderList();
-          });
-
-          li.appendChild(leftDiv);
-          li.appendChild(deleteBtn);
-          ul.appendChild(li);
-        });
-
-        groupEl.appendChild(ul);
-        sectionsContainer.appendChild(groupEl);
-      });
-
-      setupTouchAndDrag();
-    }
-
-    function setupTouchAndDrag() {
-      const groups = document.querySelectorAll('.category-group');
-      let activeGroup = null;
-
-      groups.forEach(group => {
-        const header = group.querySelector('.category-header');
-
-        header.addEventListener('touchstart', (e) => {
-          activeGroup = group;
-          group.classList.add('dragging');
-        }, { passive: true });
-
-        header.addEventListener('touchend', () => {
-          if (!activeGroup) return;
-          activeGroup.classList.remove('dragging');
-          activeGroup = null;
-          updateCategoryOrder();
-        });
-
-        header.addEventListener('touchmove', (e) => {
-          if (!activeGroup) return;
-          const touchLocation = e.touches[0];
-          const targetEl = document.elementFromPoint(touchLocation.clientX, touchLocation.clientY);
-          const targetGroup = targetEl?.closest('.category-group');
-
-          if (targetGroup && targetGroup !== activeGroup) {
-            const rect = targetGroup.getBoundingClientRect();
-            const next = (touchLocation.clientY - rect.top) / (rect.bottom - rect.top) > 0.5;
-            sectionsContainer.insertBefore(activeGroup, next ? targetGroup.nextSibling : targetGroup);
-          }
-        }, { passive: true });
-      });
-
-      function updateCategoryOrder() {
-        const newOrder = Array.from(sectionsContainer.children).map(el => el.dataset.category);
-        categoryOrder = [...new Set([...newOrder, ...categoryOrder])];
-        saveState();
-      }
-    }
-
-    function shareList() {
-      const pendingItems = items.filter(i => !i.completed);
-      
-      if (pendingItems.length === 0) {
-        alert('Nákupní seznam je prázdný nebo jsou všechny položky již nakoupeny.');
+      if (normalizedVal.length < 2) {
+        autocompleteList.style.display = 'none';
         return;
       }
 
-      const categoryName = currentTab === 'food' ? 'Potraviny' : 'Kuchyně';
-      let shareText = `🛒 *Nákupní Seznam (${categoryName})*\n\n`;
+      const matches = presetData[currentCategory].filter(item => 
+        removeDiacritics(item).includes(normalizedVal)
+      );
 
-      const grouped = pendingItems.reduce((acc, item) => {
-        const cat = item.category || "Ostatní";
-        if (!acc[cat]) acc[cat] = [];
-        acc[cat].push(item);
-        return acc;
-      }, {});
-
-      categoryOrder.forEach(cat => {
-        if (grouped[cat] && grouped[cat].length > 0) {
-          shareText += `📌 *${cat}*\n`;
-          grouped[cat].forEach(i => {
-            const qtyStr = i.qty ? `(${i.qty}) ` : '';
-            shareText += `• ${qtyStr}${i.text}\n`;
-          });
-          shareText += `\n`;
-        }
-      });
-
-      if (navigator.share) {
-        navigator.share({
-          title: `Nákupní seznam - ${categoryName}`,
-          text: shareText.trim()
-        }).catch(() => {});
-      } else {
-        navigator.clipboard.writeText(shareText.trim()).then(() => {
-          alert('Seznam byl zkopírován do schránky!');
-        });
+      if (matches.length === 0) {
+        autocompleteList.style.display = 'none';
+        return;
       }
-    }
 
-    input.addEventListener('input', () => {
-      const query = input.value.trim();
-      const normalizedQuery = removeDiacritics(query);
-      closeAutocomplete();
-
-      if (normalizedQuery.length < 2) return;
-
-      const db = getDatabase();
-      const matches = db.filter(item => removeDiacritics(item.name).includes(normalizedQuery));
-
-      if (matches.length === 0) return;
-
-      matches.forEach((match) => {
-        const itemDiv = document.createElement('div');
-        itemDiv.className = 'autocomplete-item';
-        itemDiv.innerHTML = `<span>${match.name}</span><span class="ac-category">${match.category}</span>`;
-
-        itemDiv.addEventListener('click', () => {
-          input.value = match.name;
-          input.dataset.selectedCategory = match.category;
-          closeAutocomplete();
+      matches.forEach(match => {
+        const div = document.createElement('div');
+        div.className = 'autocomplete-item';
+        div.textContent = match;
+        div.addEventListener('click', () => {
+          todoInput.value = match;
+          autocompleteList.style.display = 'none';
         });
-
-        autocompleteList.appendChild(itemDiv);
+        autocompleteList.appendChild(div);
       });
 
       autocompleteList.style.display = 'block';
     });
 
     document.addEventListener('click', (e) => {
-      if (!input.contains(e.target) && !autocompleteList.contains(e.target)) {
-        closeAutocomplete();
+      if (!todoInput.contains(e.target) && !autocompleteList.contains(e.target)) {
+        autocompleteList.style.display = 'none';
       }
     });
 
-    form.addEventListener('submit', (e) => {
+    function switchView(viewName, event) {
+      currentView = viewName;
+      document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.view-section').forEach(sec => sec.classList.remove('active'));
+      
+      event.target.classList.add('active');
+      document.getElementById(`view-${viewName}`).classList.add('active');
+      renderAll();
+    }
+
+    function switchCategory(cat) {
+      currentCategory = cat;
+      document.getElementById('tab-food').classList.toggle('active', cat === 'food');
+      document.getElementById('tab-kitchen').classList.toggle('active', cat === 'kitchen');
+      autocompleteList.style.display = 'none';
+      renderAll();
+    }
+
+    function renderAll() {
+      renderActiveList();
+      renderFrequent();
+      renderHistory();
+    }
+
+    function getFilteredItems() {
+      return items.filter(item => (item.type || 'food') === currentCategory);
+    }
+
+    function renderActiveList() {
+      const container = document.getElementById('active-items-container');
+      container.innerHTML = '';
+      const activeItems = getFilteredItems().filter(i => !i.completed);
+
+      if (activeItems.length === 0) {
+        container.innerHTML = '<div class="empty-msg">Vše nakoupeno! 🛒</div>';
+        return;
+      }
+
+      activeItems.forEach(item => {
+        const li = document.createElement('li');
+        li.innerHTML = `
+          <div class="item-left" onclick="toggleComplete('${item.id}', true)">
+            <div class="custom-checkbox"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
+            ${item.qty ? `<span class="qty-badge">${item.qty}</span>` : ''}
+            <span class="item-text">${item.text}</span>
+          </div>
+          <button class="btn-delete" onclick="deleteItem('${item.id}')">✕</button>
+        `;
+        container.appendChild(li);
+      });
+    }
+
+    function renderHistory() {
+      const container = document.getElementById('history-items-container');
+      container.innerHTML = '';
+      const completedItems = getFilteredItems().filter(i => i.completed);
+
+      if (completedItems.length === 0) {
+        container.innerHTML = '<div class="empty-msg">Žádné nakoupené položky.</div>';
+        return;
+      }
+
+      completedItems.forEach(item => {
+        const li = document.createElement('li');
+        li.className = 'completed';
+        li.innerHTML = `
+          <div class="item-left" onclick="toggleComplete('${item.id}', false)">
+            <div class="custom-checkbox"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
+            <span class="item-text">${item.text}</span>
+          </div>
+          <button class="btn-delete" onclick="deleteItem('${item.id}')">✕</button>
+        `;
+        container.appendChild(li);
+      });
+    }
+
+    function renderFrequent() {
+      const container = document.getElementById('frequent-container');
+      container.innerHTML = '';
+      
+      const categoryItems = getFilteredItems();
+      const counts = {};
+      categoryItems.forEach(i => {
+        counts[i.text] = (counts[i.text] || 0) + (i.buyCount || 1);
+      });
+
+      const sorted = Object.entries(counts).sort((a,b) => b[1] - a[1]).slice(0, 6);
+
+      if (sorted.length === 0) {
+        container.innerHTML = '<div class="empty-msg" style="grid-column: 1/-1;">Zatím chybí data pro časté nákupy.</div>';
+        return;
+      }
+
+      sorted.forEach(([text, count]) => {
+        const card = document.createElement('div');
+        card.className = 'frequent-card';
+        card.innerHTML = `
+          <div>
+            <div class="frequent-title">${text}</div>
+            <div class="frequent-count">Koupeno ${count}x</div>
+          </div>
+          <button class="btn-quick-add" onclick="quickAdd('${text}')">+ Přidat</button>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    document.getElementById('todo-form').addEventListener('submit', (e) => {
       e.preventDefault();
-      const text = input.value.trim();
-      const qty = qtyInput.value.trim();
-      if (!text) return;
+      const input = document.getElementById('todo-input');
+      const qtyInput = document.getElementById('qty-input');
+      
+      if (!input.value.trim()) return;
 
-      const category = input.dataset.selectedCategory || findCategory(text);
-
-      items.unshift({ id: Date.now(), text, qty, category, completed: false });
-
-      delete input.dataset.selectedCategory;
-      saveState();
-      renderList();
+      db.push({
+        text: input.value.trim(),
+        qty: qtyInput.value.trim(),
+        type: currentCategory,
+        completed: false,
+        buyCount: 1,
+        createdAt: Date.now()
+      });
 
       input.value = '';
       qtyInput.value = '';
-      closeAutocomplete();
-      
-      input.blur();
-      qtyInput.blur();
+      autocompleteList.style.display = 'none';
     });
 
-    tabFood.addEventListener('click', () => {
-      if (currentTab === 'food') return;
-      currentTab = 'food';
-      tabFood.classList.add('active');
-      tabKitchen.classList.remove('active');
-      loadState();
-      renderList();
-    });
+    function quickAdd(text) {
+      db.push({ text, qty: '', type: currentCategory, completed: false, buyCount: 1, createdAt: Date.now() });
+    }
 
-    tabKitchen.addEventListener('click', () => {
-      if (currentTab === 'kitchen') return;
-      currentTab = 'kitchen';
-      tabKitchen.classList.add('active');
-      tabFood.classList.remove('active');
-      loadState();
-      renderList();
-    });
+    function toggleComplete(id, completed) {
+      const item = items.find(i => i.id === id);
+      const updates = { completed };
+      if (completed) {
+        updates.buyCount = (item.buyCount || 1) + 1;
+      }
+      db.child(id).update(updates);
+    }
 
-    btnShare.addEventListener('click', shareList);
+    function deleteItem(id) {
+      db.child(id).remove();
+    }
 
-    loadState();
-    renderList();
+    function clearHistory() {
+      getFilteredItems().filter(i => i.completed).forEach(i => db.child(i.id).remove());
+    }
   </script>
 </body>
 </html>
