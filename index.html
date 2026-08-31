@@ -9,10 +9,6 @@
   <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3081/3081840.png">
   <meta name="theme-color" content="#10b981">
 
-  <!-- Firebase SDKs -->
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-
   <style>
     :root {
       --bg-gradient: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
@@ -35,8 +31,14 @@
     body { background: var(--bg-gradient); color: var(--text-main); display: flex; justify-content: center; padding: 12px; min-height: 100vh; }
     .app-container { background: var(--card-bg); width: 100%; max-width: 500px; padding: 20px 16px; border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); align-self: flex-start; }
     
-    .header-title { font-size: 1.5rem; font-weight: 800; margin-bottom: 12px; text-align: center; background: linear-gradient(to right, #10b981, #059669); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .header-title { font-size: 1.5rem; font-weight: 800; margin-bottom: 8px; text-align: center; background: linear-gradient(to right, #10b981, #059669); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
     
+    /* Správa více seznamů & Sdílení */
+    .lists-bar { display: flex; gap: 8px; margin-bottom: 12px; align-items: center; }
+    .select-list { flex: 1; padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 0.9rem; font-weight: 600; background: #f8fafc; color: var(--text-main); outline: none; }
+    .btn-secondary { background: #e2e8f0; color: var(--text-main); border: none; padding: 8px 12px; border-radius: var(--radius-sm); font-size: 0.85rem; font-weight: 600; cursor: pointer; }
+    .btn-share { background: var(--primary-light); color: var(--primary-hover); border: none; padding: 8px 12px; border-radius: var(--radius-sm); font-size: 0.85rem; font-weight: 700; cursor: pointer; }
+
     .nav-tabs { display: flex; background-color: #f1f5f9; padding: 4px; border-radius: var(--radius-md); margin-bottom: 12px; gap: 4px; }
     .nav-btn { flex: 1; padding: 8px 4px; border: none; background: none; font-size: 0.85rem; font-weight: 600; color: var(--text-muted); cursor: pointer; border-radius: var(--radius-sm); }
     .nav-btn.active { background-color: #ffffff; color: var(--primary-hover); box-shadow: var(--shadow-sm); }
@@ -83,7 +85,14 @@
 <body>
 
   <div class="app-container">
-    <h1 class="header-title">Můj Nákup Live</h1>
+    <h1 class="header-title">Můj Nákup</h1>
+
+    <!-- Lišta více seznamů a sdílení -->
+    <div class="lists-bar">
+      <select id="select-list" class="select-list" onchange="changeList(this.value)"></select>
+      <button class="btn-secondary" onclick="createList()">+ Nový</button>
+      <button class="btn-share" onclick="shareList()">🔗 Sdílet</button>
+    </div>
 
     <div class="nav-tabs">
       <button class="nav-btn active" onclick="switchView('list', event)">🛒 Seznam</button>
@@ -126,123 +135,181 @@
   </div>
 
   <script>
-    // --- FIREBASE KONFIGURACE ---
-    const firebaseConfig = {
-  apiKey: "AIzaSyBF8jWnaYzL5SAu9R_WItfRpHWyOyoUl48",
-  authDomain: "muuj-naakup.firebaseapp.com",
-  databaseURL: "https://muuj-naakup-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "muuj-naakup",
-  storageBucket: "muuj-naakup.firebasestorage.app",
-  messagingSenderId: "615152397807",
-  appId: "1:615152397807:web:86f2d003155cfe0fe09a1a",
-  measurementId: "G-611CPJ58ZJ"
-};
-
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database().ref('shopping_list');
-
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js'));
     }
 
-    // --- ROZŠÍŘENÁ DATABÁZE POLOŽEK PRO PREDIKTIVNÍ ZADÁVÁNÍ ---
-   const categoryRules = {
-  "Ovoce a zelenina": [
-    // Ovoce
-    "jablko", "banán", "pomeranč", "mandarinka", "citrón", "limetka", "grep", "grapefruit", 
-    "hroznové víno", "jahoda", "malina", "borůvka", "ostružina", "broskev", "meruňka", 
-    "nektarinka", "švestka", "meloun", "ananas", "mango", "avokádo", "kiwi", "fík", 
-    "datle", "brusinka", "rybíz", "angrešt",
-    // Zelenina
-    "brambor", "mrkev", "cibule", "česnek", "rajče", "paprika", "okurka", "salát", 
-    "špenát", "brokolice", "květák", "cuketa", "dýně", "lilek", "celer", "petržel", 
-    "pór", "pórek", "ředkvička", "ředkev", "bylinka", "bazalka", "máta", "pažitka", 
-    "kopr", "petrželka", "kukuřice", "hrášek", "fazole", "červená řepa", "zelí", "houba", "žampión"
-  ],
+    // --- PROČIŠTĚNÝ SLOVNÍK POLOŽEK PRO PREDIKTIVNÍ ZADÁVÁNÍ ---
+    const categoryRules = {
+      "Ovoce a zelenina": [
+        "jablko", "banán", "pomeranč", "mandarinka", "citrón", "limetka", "grep", "grapefruit", 
+        "hroznové víno", "jahoda", "malina", "borůvka", "ostružina", "broskev", "meruňka", 
+        "nektarinka", "švestka", "meloun", "ananas", "mango", "avokádo", "kiwi", "fík", 
+        "datle", "brusinka", "rybíz", "angrešt", "brambor", "mrkev", "cibule", "česnek", 
+        "rajče", "paprika", "okurka", "salát", "špenát", "brokolice", "květák", "cuketa", 
+        "dýně", "lilek", "celer", "petržel", "pór", "pórek", "ředkvička", "ředkev", 
+        "bylinka", "bazalka", "máta", "pažitka", "kopr", "petrželka", "kukuřice", 
+        "hrášek", "fazole", "červená řepa", "zelí", "houba", "žampión"
+      ],
 
-  "Pečivo": [
-    "chléb", "houska", "rohlík", "bageta", "vánočka", "toastový chléb", "koláč", 
-    "croissant", "kobliha", "donut", "raženka", "kaiserka", "ciabatta", "focaccia", 
-    "veka", "bulka", "tortilla", "loupák", "štrúdl", "závin"
-  ],
+      "Pečivo": [
+        "chléb", "houska", "rohlík", "bageta", "vánočka", "toastový chléb", "koláč", 
+        "croissant", "kobliha", "donut", "raženka", "kaiserka", "ciabatta", "focaccia", 
+        "veka", "bulka", "tortilla", "loupák", "štrúdl", "závin"
+      ],
 
-  "Mléčné a chladicí": [
-    "mléko", "máslo", "sýr", "eidam", "gouda", "hermelín", "camembert", "niva", 
-    "balkánský sýr", "mozzarella", "parmezán", "tvaroh", "jogurt", "smetana", 
-    "šlehačka", "tavený sýr", "lučina", "žervé", "cottage", "pribináček", "termix", 
-    "podmáslí", "kefír", "syrovátka", "kvasnice", "droždí", "pudink", "listové těsto"
-  ],
+      "Mléčné a chladicí": [
+        "mléko", "máslo", "sýr", "eidam", "gouda", "hermelín", "camembert", "niva", 
+        "balkánský sýr", "mozzarella", "parmezán", "tvaroh", "jogurt", "smetana", 
+        "šlehačka", "tavený sýr", "lučina", "žervé", "cottage", "pribináček", "termix", 
+        "podmáslí", "kefír", "syrovátka", "kvasnice", "droždí", "pudink", "listové těsto", "vejce"
+      ],
 
-  "Maso a uzeniny": [
-    "maso", "kuřecí", "kuřecí prsa", "vepřové", "hovězí", "krůtí", "kachna", "husa", "mleté maso", 
-    "šunka", "párek", "klobása", "slanina", "vysočina", "herkules", "poličan", 
-    "špekáček", "jitrnice", "jelito", "tlačenka", "paštika", "ryba", "losos", 
-    "treska", "kapr", "pstruh", "tuňák fresh", "kreveta"
-  ],
+      "Maso a uzeniny": [
+        "maso", "kuřecí", "kuřecí prsa", "vepřové", "hovězí", "krůtí", "kachna", "husa", 
+        "mleté maso", "šunka", "párek", "klobása", "slanina", "vysočina", "herkules", 
+        "poličan", "špekáček", "jitrnice", "jelito", "tlačenka", "paštika", "ryba", 
+        "losos", "treska", "kapr", "pstruh", "tuňák fresh", "kreveta"
+      ],
 
-  "Trvanlivé potraviny": [
-    "mouka", "cukr", "sůl", "rýže", "těstoviny", "špagety", "kolínka", "vřetena", 
-    "penne", "kuskus", "bulgur", "čočka", "olej", "olivový olej", "ocet", "balsamico", 
-    "strouhanka", "krupice", "ovsené vločky", "müsli", "granola", "kečup", "tatarka", 
-    "majronéza", "hořčice", "rajčatový protlak", "pesto", "konzerva", "tuňák", 
-    "sardinka", "kompot", "džem", "marmeláda", "med", "nutella", "piškot", "koření", 
-    "pepř", "kmín", "mletá paprika", "majoránka", "oregano", "skořice", "vanilka", 
-    "kypřicí prášek", "prášek do pečiva", "vanilkový cukr", "kakao", "čokoláda na vaření", "bujón"
-  ],
+      "Trvanlivé potraviny": [
+        "mouka", "cukr", "sůl", "rýže", "těstoviny", "špagety", "kolínka", "vřetena", 
+        "penne", "kuskus", "bulgur", "čočka", "olej", "olivový olej", "ocet", "balsamico", 
+        "strouhanka", "krupice", "ovsené vločky", "müsli", "granola", "kečup", "tatarka", 
+        "majronéza", "hořčice", "rajčatový protlak", "pesto", "konzerva", "tuňák", 
+        "sardinka", "kompot", "džem", "marmeláda", "med", "nutella", "piškot", "koření", 
+        "pepř", "kmín", "mletá paprika", "majoránka", "oregano", "skořice", "vanilka", 
+        "kypřicí prášek", "prášek do pečiva", "vanilkový cukr", "kakao", "čokoláda na vaření", "bujón"
+      ],
 
-  "Pochutiny a sladkosti": [
-    "čokoláda", "bonbón", "oplatka", "keks", "chipsy", "brambůrky", "oříšky", 
-    "mandle", "kešu", "pistácie", "tyčinka", "žvýkačka", "popcorn"
-  ],
+      "Pochutiny a sladkosti": [
+        "čokoláda", "bonbón", "oplatka", "keks", "chipsy", "brambůrky", "oříšky", 
+        "mandle", "kešu", "pistácie", "tyčinka", "žvýkačka", "popcorn"
+      ],
 
-  "Nápoje": [
-    "voda", "minerálka", "pivo", "víno", "prosecco", "džus", "sirup", "šťáva", 
-    "káva", "zrnková káva", "mletá káva", "espresso", "čaj", "černý čaj", 
-    "zelený čaj", "ovocný čaj", "cola", "kofola", "fanta", "sprite", "tonic", 
-    "energetický nápoj"
-  ],
+      "Nápoje": [
+        "voda", "minerálka", "pivo", "víno", "prosecco", "džus", "sirup", "šťáva", 
+        "káva", "zrnková káva", "mletá káva", "espresso", "čaj", "černý čaj", 
+        "zelený čaj", "ovocný čaj", "cola", "kofola", "fanta", "sprite", "tonic", 
+        "energetický nápoj"
+      ],
 
-  "Drogerie a hygiena": [
-    "toaletní papír", "kapesník", "vlhčený ubrousek", "mýdlo", "sprchový gel", 
-    "šampón", "kondicionér", "zubní pasta", "zubní kartáček", "deodorant", 
-    "voňavka", "holítko", "pěna na holení", "vložka", "tampón", "odličovač", "krém"
-  ],
+      "Drogerie a hygiena": [
+        "toaletní papír", "kapesník", "vlhčený ubrousek", "mýdlo", "sprchový gel", 
+        "šampón", "kondicionér", "zubní pasta", "zubní kartáček", "deodorant", 
+        "voňavka", "holítko", "pěna na holení", "vložka", "tampón", "odličovač", "krém"
+      ],
 
-  "Domácnost a Úklid": [
-    "jar", "saponát", "tablety do myčky", "sůl do myčky", "leštidlo", "prací prášek", 
-    "prací gel", "aviváž", "čistič", "savo", "domestos", "houbička", "drátěnka", 
-    "hadřík", "utěrka", "pytel na odpad", "sáček do koše", "alobal", "potravinová fólie", 
-    "pečicí papír", "svíčka", "zapalovač", "baterie", "žárovka"
-  ],
+      "Domácnost a Úklid": [
+        "jar", "saponát", "tablety do myčky", "sůl do myčky", "leštidlo", "prací prášek", 
+        "prací gel", "aviváž", "čistič", "savo", "domestos", "houbička", "drátěnka", 
+        "hadřík", "utěrka", "pytel na odpad", "sáček do koše", "alobal", "potravinová fólie", 
+        "pečicí papír", "svíčka", "zapalovač", "baterie", "žárovka"
+      ],
 
-  "Kuchyňské vybavení": [
-    "pánev", "hrnec", "kastrol", "poklice", "nůž", "prkénko", "vařečka", "sběračka", 
-    "mísa", "miska", "talíř", "sklenice", "sklenička", "hrnek", "příbor", "vidlička", 
-    "lžíce", "lžička", "otvírák", "vývrtka", "škrabka", "struhadlo", "cedník", "sítko", 
-    "válek", "forma na pečení", "plech", "odměrka", "kuchyňská váha", "termoska", "dóza"
-  ]
-};
+      "Kuchyňské vybavení": [
+        "pánev", "hrnec", "kastrol", "poklice", "nůž", "prkénko", "vařečka", "sběračka", 
+        "mísa", "miska", "talíř", "sklenice", "sklenička", "hrnek", "příbor", "vidlička", 
+        "lžíce", "lžička", "otvírák", "vývrtka", "škrabka", "struhadlo", "cedník", "sítko", 
+        "válek", "forma na pečení", "plech", "odměrka", "kuchyňská váha", "termoska", "dóza"
+      ]
+    };
 
-    let items = [];
+    const allPresetItems = Array.from(new Set(Object.values(categoryRules).flat()));
+
+    // --- SPRÁVA DÁT A LOKÁLNÍHO ÚLOŽIŠTĚ ---
+    let allLists = JSON.parse(localStorage.getItem('shopping_lists')) || { "Hlavní seznam": [] };
+    let currentListName = localStorage.getItem('current_list_name') || Object.keys(allLists)[0] || "Hlavní seznam";
+    let items = allLists[currentListName] || [];
     let currentCategory = 'food';
     let currentView = 'list';
 
-    // Načítání v reálném čase z Firebase
-    db.on('value', (snapshot) => {
-      const data = snapshot.val();
-      items = data ? Object.keys(data).map(key => ({ id: key, ...data[key] })) : [];
-      renderAll();
-    });
+    // Kontrola sdíleného odkazu z URL
+    function checkUrlShare() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const sharedData = urlParams.get('listData');
+      const sharedName = urlParams.get('listName') || 'Sdílený seznam';
 
+      if (sharedData) {
+        try {
+          const parsedItems = JSON.parse(decodeURIComponent(sharedData));
+          let finalName = sharedName;
+          let counter = 1;
+          while (allLists[finalName]) {
+            finalName = `${sharedName} (${counter++})`;
+          }
+          allLists[finalName] = parsedItems;
+          currentListName = finalName;
+          saveAll();
+          window.history.replaceState({}, document.title, window.location.pathname);
+          alert(`Nahrán sdílený seznam: "${finalName}"`);
+        } catch(e) {
+          console.error("Chyba při načítání sdíleného seznamu.");
+        }
+      }
+    }
+
+    function saveAll() {
+      allLists[currentListName] = items;
+      localStorage.setItem('shopping_lists', JSON.stringify(allLists));
+      localStorage.setItem('current_list_name', currentListName);
+      renderListsDropdown();
+      renderAll();
+    }
+
+    function renderListsDropdown() {
+      const select = document.getElementById('select-list');
+      select.innerHTML = '';
+      Object.keys(allLists).forEach(name => {
+        const opt = document.createElement('option');
+        opt.value = name;
+        opt.textContent = name;
+        if (name === currentListName) opt.selected = true;
+        select.appendChild(opt);
+      });
+    }
+
+    function changeList(name) {
+      currentListName = name;
+      items = allLists[currentListName] || [];
+      saveAll();
+    }
+
+    function createList() {
+      const name = prompt("Zadejte název nového seznamu:");
+      if (name && name.trim()) {
+        const trimmed = name.trim();
+        if (!allLists[trimmed]) {
+          allLists[trimmed] = [];
+        }
+        changeList(trimmed);
+      }
+    }
+
+    function shareList() {
+      const dataStr = encodeURIComponent(JSON.stringify(items));
+      const shareUrl = `${window.location.origin}${window.location.pathname}?listName=${encodeURIComponent(currentListName)}&listData=${dataStr}`;
+      
+      if (navigator.share) {
+        navigator.share({
+          title: `Nákupní seznam - ${currentListName}`,
+          url: shareUrl
+        }).catch(() => {});
+      } else {
+        navigator.clipboard.writeText(shareUrl).then(() => {
+          alert('Odkaz na tento seznam byl zkopírován do schránky!');
+        });
+      }
+    }
+
+    // --- NAŠEPTÁVAČ LOGIKA ---
     const todoInput = document.getElementById('todo-input');
     const autocompleteList = document.getElementById('autocomplete-list');
 
-    // Funkce pro odstranění diakritiky (pro snazší vyhledávání)
     function removeDiacritics(str) {
       return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
     }
 
-    // Našeptávač logika
     todoInput.addEventListener('input', () => {
       const val = todoInput.value.trim();
       const normalizedVal = removeDiacritics(val);
@@ -253,7 +320,7 @@
         return;
       }
 
-      const matches = presetData[currentCategory].filter(item => 
+      const matches = allPresetItems.filter(item => 
         removeDiacritics(item).includes(normalizedVal)
       );
 
@@ -282,6 +349,7 @@
       }
     });
 
+    // --- NAVIGACE A ZOBRAZENÍ ---
     function switchView(viewName, event) {
       currentView = viewName;
       document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
@@ -389,6 +457,7 @@
       });
     }
 
+    // --- OPERACE S POLOŽKAMI ---
     document.getElementById('todo-form').addEventListener('submit', (e) => {
       e.preventDefault();
       const input = document.getElementById('todo-input');
@@ -396,7 +465,8 @@
       
       if (!input.value.trim()) return;
 
-      db.push({
+      items.push({
+        id: Date.now().toString(),
         text: input.value.trim(),
         qty: qtyInput.value.trim(),
         type: currentCategory,
@@ -408,28 +478,47 @@
       input.value = '';
       qtyInput.value = '';
       autocompleteList.style.display = 'none';
+      saveAll();
     });
 
     function quickAdd(text) {
-      db.push({ text, qty: '', type: currentCategory, completed: false, buyCount: 1, createdAt: Date.now() });
+      items.push({ 
+        id: Date.now().toString(),
+        text, 
+        qty: '', 
+        type: currentCategory, 
+        completed: false, 
+        buyCount: 1, 
+        createdAt: Date.now() 
+      });
+      saveAll();
     }
 
     function toggleComplete(id, completed) {
       const item = items.find(i => i.id === id);
-      const updates = { completed };
-      if (completed) {
-        updates.buyCount = (item.buyCount || 1) + 1;
+      if (item) {
+        item.completed = completed;
+        if (completed) {
+          item.buyCount = (item.buyCount || 1) + 1;
+        }
+        saveAll();
       }
-      db.child(id).update(updates);
     }
 
     function deleteItem(id) {
-      db.child(id).remove();
+      items = items.filter(i => i.id !== id);
+      saveAll();
     }
 
     function clearHistory() {
-      getFilteredItems().filter(i => i.completed).forEach(i => db.child(i.id).remove());
+      items = items.filter(i => !(i.completed && (i.type || 'food') === currentCategory));
+      saveAll();
     }
+
+    // Inicializace
+    checkUrlShare();
+    renderListsDropdown();
+    renderAll();
   </script>
 </body>
 </html>
